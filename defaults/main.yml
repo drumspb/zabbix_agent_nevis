@@ -1,0 +1,7 @@
+# Адрес Zabbix Server
+zabbix_server: "127.0.0.1"
+zabbix_server_active: "127.0.0.1"
+zabbix_agent_config: /etc/zabbix/zabbix_agent2.conf
+zabbix_agent_service: zabbix-agent2
+groupid: "2"
+templateid: "10001"

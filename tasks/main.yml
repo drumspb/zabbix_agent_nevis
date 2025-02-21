@@ -6,10 +6,18 @@
 
 - name: Скачать пакет репозитория Zabbix
   get_url:
-    url: https://repo.zabbix.com/zabbix/7.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_7.0-2+ubuntu24.04_all.deb
-    dest: /tmp/zabbix-release_7.0-2+ubuntu24.04_all.deb
+    url: https://repo.zabbix.com/zabbix/6.4/ubuntu/pool/main/z/zabbix-release/zabbix-release_latest_6.4+ubuntu20.04_all.deb
+    dest: /tmp/zabbix-release_latest_6.4+ubuntu20.04_all.deb
   when: not zabbix_agent2_installed.stat.exists
-  notify: Установить репозиторий Zabbix
+
+- name: Установить пакет репозитория Zabbix с помощью dpkg
+  command: dpkg -i /tmp/zabbix-release_latest_6.4+ubuntu20.04_all.deb
+  when: not zabbix_agent2_installed.stat.exists
+
+- name: Обновить кеш пакетов
+  apt:
+    update_cache: yes
+  when: not zabbix_agent2_installed.stat.exists
 
 - name: Установить Zabbix Agent 2
   apt:
@@ -17,28 +25,53 @@
     state: present
   when: not zabbix_agent2_installed.stat.exists
 
-- name: Установка плагинов Zabbix Agent 2
-  apt:
-    name:
-      - zabbix-agent2-plugin-mongodb
-      - zabbix-agent2-plugin-mssql
-      - zabbix-agent2-plugin-postgresql
-    state: present
-
-- name: Настройка конфигурации Zabbix Agent 2
+- name: Настроить Zabbix Agent 2
   template:
-    src: zabbix_agentd.conf.j2
-    dest: /etc/zabbix/zabbix_agent2.conf
-    owner: root
-    group: root
-    mode: '0644'
-  notify: Перезапуск Zabbix Agent 2
+    src: zabbix_agent2.conf.j2
+    dest: "{{ zabbix_agent_config }}"
+  notify: Перезапустить Zabbix Agent 2
 
-- name: Включение и запуск Zabbix Agent 2
-  service:
-    name: zabbix-agent2
-    state: started
-    enabled: yes
+- name: Получить токен аутентификации Zabbix API
+  uri:
+    url: "http://{{zabbix_server }}:8080/api_jsonrpc.php"
+    method: POST
+    body_format: json
+    body:
+      jsonrpc: "2.0"
+      method: "user.login"
+      params:
+        user: "Admin"
+        password: "zabbix"
+      id: 1
+    return_content: yes
+  register: auth_result
 
-- name: Перезапуск Zabbix Agent 2 (если конфигурация изменилась)
-  meta: flush_handlers
+- name: Добавить хост на Zabbix Server
+  uri:
+    url: "http://{{zabbix_server }}:8080/api_jsonrpc.php"
+    method: POST
+    body_format: json
+    body:
+      jsonrpc: "2.0"
+      method: "host.create"
+      params:
+        host: "{{ inventory_hostname }}"
+        interfaces:
+          - type: 1
+            main: 1
+            useip: 1
+            ip: "{{ ansible_host }}"
+            dns: ""
+            port: "10050"
+        groups:
+          - groupid: "{{ groupid }}"  
+        templates:
+          - templateid: "{{ templateid }}"  # ID шаблона, который применяется к хосту
+      auth: "{{ auth_result.json.result }}"
+      id: 1
+    return_content: yes
+  register: host_create_result
+
+- name: Вывести результат добавления хоста
+  debug:
+    var: host_create_result.json

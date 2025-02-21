@@ -1,6 +1,0 @@
-# Адрес Zabbix Server
-zabbix_server: "127.0.0.1"
-zabbix_server_active: "127.0.0.1"
-
-# Имя хоста (будет определено динамически)
-zabbix_hostname: "{{ wireguard_hostname }}"
