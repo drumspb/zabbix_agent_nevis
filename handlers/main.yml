@@ -1,0 +1,7 @@
+- name: Установить репозиторий Zabbix
+  command: dpkg -i /tmp/zabbix-release_7.0-2+ubuntu24.04_all.deb
+  notify: Обновить кеш пакетов
+
+- name: Обновить кеш пакетов
+  apt:
+    update_cache: yes

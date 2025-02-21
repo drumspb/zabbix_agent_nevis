@@ -1,0 +1,44 @@
+---
+- name: Проверка, установлен ли Zabbix Agent 2
+  stat:
+    path: /usr/sbin/zabbix_agent2
+  register: zabbix_agent2_installed
+
+- name: Скачать пакет репозитория Zabbix
+  get_url:
+    url: https://repo.zabbix.com/zabbix/7.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_7.0-2+ubuntu24.04_all.deb
+    dest: /tmp/zabbix-release_7.0-2+ubuntu24.04_all.deb
+  when: not zabbix_agent2_installed.stat.exists
+  notify: Установить репозиторий Zabbix
+
+- name: Установить Zabbix Agent 2
+  apt:
+    name: zabbix-agent2
+    state: present
+  when: not zabbix_agent2_installed.stat.exists
+
+- name: Установка плагинов Zabbix Agent 2
+  apt:
+    name:
+      - zabbix-agent2-plugin-mongodb
+      - zabbix-agent2-plugin-mssql
+      - zabbix-agent2-plugin-postgresql
+    state: present
+
+- name: Настройка конфигурации Zabbix Agent 2
+  template:
+    src: zabbix_agentd.conf.j2
+    dest: /etc/zabbix/zabbix_agent2.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Перезапуск Zabbix Agent 2
+
+- name: Включение и запуск Zabbix Agent 2
+  service:
+    name: zabbix-agent2
+    state: started
+    enabled: yes
+
+- name: Перезапуск Zabbix Agent 2 (если конфигурация изменилась)
+  meta: flush_handlers
