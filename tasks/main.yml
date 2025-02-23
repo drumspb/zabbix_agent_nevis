@@ -1,4 +1,9 @@
 ---
+- name: Удаление Zabbix Agent
+  apt:
+    name: zabbix-agent
+    state: absent
+    
 - name: Проверка, установлен ли Zabbix Agent 2
   stat:
     path: /usr/sbin/zabbix_agent2
@@ -33,22 +38,22 @@
 
 - name: Получить токен аутентификации Zabbix API
   uri:
-    url: "http://{{zabbix_server }}:8080/api_jsonrpc.php"
+    url: "http://{{zabbix_server }}/api_jsonrpc.php"
     method: POST
     body_format: json
     body:
       jsonrpc: "2.0"
       method: "user.login"
       params:
-        user: "Admin"
-        password: "zabbix"
+        user: "{{ admin_user }}"
+        password: "{{ admin_pass }}"
       id: 1
     return_content: yes
   register: auth_result
 
 - name: Добавить хост на Zabbix Server
   uri:
-    url: "http://{{zabbix_server }}:8080/api_jsonrpc.php"
+    url: "http://{{zabbix_server }}/api_jsonrpc.php"
     method: POST
     body_format: json
     body:

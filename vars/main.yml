@@ -1,2 +1,0 @@
-# Получаем имя файла из /etc/wireguard/
-wireguard_hostname: "{{ lookup('fileglob', '/etc/wireguard/*.conf').0 | basename | splitext | first }}"
