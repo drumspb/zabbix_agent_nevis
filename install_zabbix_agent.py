@@ -4,6 +4,7 @@ import zipfile
 import shutil
 import subprocess
 import json
+import configparser
 
 # --- [Настройки] ---
 ZABBIX_SERVER = "78.37.67.154"
@@ -50,13 +51,13 @@ def extract_zip(zip_file, extract_to):
 def parse_settings(file_path):
     """Парсит файл settings.ini."""
     print(f"Парсинг файла {file_path}...")
-    settings = {}
+    config = configparser.ConfigParser()
     try:
-        with open(file_path, "r") as file:
-            for line in file:
-                if "=" in line:
-                    key, value = line.strip().split("=", 1)
-                    settings[key.strip()] = value.strip()
+        config.read(file_path)
+        settings = {
+            "pharmacy_or_subgroup": config.get("App", "pharmacy_or_subgroup", fallback="").strip(),
+            "device_or_name": config.get("App", "device_or_name", fallback="").strip(),
+        }
         return settings
     except Exception as e:
         print(f"Ошибка при чтении файла settings.ini: {e}")
@@ -85,6 +86,25 @@ def zabbix_api_request(method, params, auth_token=None):
 
 # --- [Основной скрипт] ---
 if __name__ == "__main__":
+    # Парсинг settings.ini (вне зависимости от установки)
+    settings_file = SETTINGS_FILE_1 if os.path.exists(SETTINGS_FILE_1) else SETTINGS_FILE_2
+    settings = parse_settings(settings_file)
+
+    # Определение Hostname (вне зависимости от установки)
+    device_name = {
+        "0": "CompZav",
+        "1": "Kassa1",
+        "2": "Kassa2",
+        "3": "Kassa3",
+        "4": "Kassa4",
+        "102": "CompZav2",
+        "99": "Server",
+    }.get(settings.get("device_or_name", ""), "Unknown")
+
+    pharmacy_or_subgroup = settings.get("pharmacy_or_subgroup", "").strip()
+    hostname = f"Apteka{pharmacy_or_subgroup}_{device_name}"
+    print(f"Hostname: {hostname}")
+
     # Проверка, запущен ли Zabbix Agent
     print("Проверка, запущен ли Zabbix Agent...")
     try:
@@ -108,25 +128,6 @@ if __name__ == "__main__":
             os.makedirs(INSTALL_DIR)
         shutil.copy(os.path.join(EXTRACT_DIR, "bin", "zabbix_agentd.exe"), INSTALL_DIR)
         shutil.copy(os.path.join(EXTRACT_DIR, "conf", "zabbix_agentd.conf"), INSTALL_DIR)
-
-        # Парсинг settings.ini
-        settings_file = SETTINGS_FILE_1 if os.path.exists(SETTINGS_FILE_1) else SETTINGS_FILE_2
-        settings = parse_settings(settings_file)
-
-        # Определение Hostname
-        device_name = {
-            "0": "CompZav",
-            "1": "Kassa1",
-            "2": "Kassa2",
-            "3": "Kassa3",
-            "4": "Kassa4",
-            "102": "CompZav2",
-            "99": "Server",
-        }.get(settings.get("device_or_name", ""), "Unknown")
-
-        pharmacy_or_subgroup = settings.get("pharmacy_or_subgroup", "").strip()
-        hostname = f"Apteka{pharmacy_or_subgroup}_{device_name}"
-        print(f"Hostname: {hostname}")
 
         # Настройка конфигурационного файла
         print("Настройка конфигурационного файла Zabbix Agent 2...")
@@ -178,7 +179,8 @@ if __name__ == "__main__":
         },
         auth_token,
     )
-
+            # "interfaces": [{"type": 1, "main": 1, "useip": 0, "dns": hostname, "port": "10050"}],
+            
     if "error" in host_response:
         print("Ошибка при регистрации хоста!")
         print("Ответ сервера:", host_response)
