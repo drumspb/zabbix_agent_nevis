@@ -9,9 +9,8 @@ import configparser
 # --- [Настройки] ---
 ZABBIX_SERVER = "78.37.67.154"
 ZABBIX_PORT = "8081"
-ZABBIX_USER = "Admin"
-ZABBIX_PASS = "zabbix"
 TEMPLATE_ID = "10351"
+BEARER_TOKEN = "" # внеси токен 
 
 ARCHIVE_URL = "https://cdn.zabbix.com/zabbix/binaries/stable/7.2/7.2.4/zabbix_agent-7.2.4-windows-amd64.zip"
 ARCHIVE_FILE = os.path.join(os.environ["TEMP"], "zabbix_agent-7.2.4-windows-amd64.zip")
@@ -63,18 +62,19 @@ def parse_settings(file_path):
         print(f"Ошибка при чтении файла settings.ini: {e}")
         exit(1)
 
-def zabbix_api_request(method, params, auth_token=None):
-    """Выполняет запрос к Zabbix API."""
+def zabbix_api_request(method, params, bearer_token=None):
+    """Выполняет запрос к Zabbix API с использованием Bearer-токена."""
     url = f"http://{ZABBIX_SERVER}:{ZABBIX_PORT}/api_jsonrpc.php"
     headers = {"Content-Type": "application/json"}
+    if bearer_token:
+        headers["Authorization"] = f"Bearer {bearer_token}"
+
     payload = {
         "jsonrpc": "2.0",
         "method": method,
         "params": params,
         "id": 1,
     }
-    if auth_token:
-        payload["auth"] = auth_token
 
     try:
         response = requests.post(url, headers=headers, data=json.dumps(payload))
@@ -150,14 +150,6 @@ if __name__ == "__main__":
     # Регистрация хоста в Zabbix
     print("Регистрация хоста на сервере Zabbix...")
 
-    # Получение токена
-    auth_response = zabbix_api_request("user.login", {"username": ZABBIX_USER, "password": ZABBIX_PASS})
-    auth_token = auth_response.get("result")
-    if not auth_token:
-        print("Ошибка получения токена!")
-        print("Ответ сервера:", auth_response)
-        exit(1)
-
     # Определение groupid
     groupid = {
         "CompZav": "24",
@@ -174,13 +166,13 @@ if __name__ == "__main__":
         "host.create",
         {
             "host": hostname,
-            "groups": [{"groupid": groupid}],
-            "templates": [{"templateid": TEMPLATE_ID}],
+            "groups": [{"groupid": str(groupid)}],  # Убедимся, что groupid строка
+            "templates": [{"templateid": str(TEMPLATE_ID)}],  # Убедимся, что templateid строка
+            "status": 0,  # Включаем хост
         },
-        auth_token,
+        BEARER_TOKEN,
     )
-            # "interfaces": [{"type": 1, "main": 1, "useip": 0, "dns": hostname, "port": "10050"}],
-            
+
     if "error" in host_response:
         print("Ошибка при регистрации хоста!")
         print("Ответ сервера:", host_response)
