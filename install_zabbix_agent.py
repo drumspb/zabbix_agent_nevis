@@ -10,7 +10,7 @@ import configparser
 ZABBIX_SERVER = "78.37.67.154"
 ZABBIX_PORT = "8081"
 ZABBIX_USER = "Admin"
-ZABBIX_PASS = "UCu5ALMdAAgZEcD"
+ZABBIX_PASS = "zabbix"
 TEMPLATE_ID = "10351"
 
 ARCHIVE_URL = "https://cdn.zabbix.com/zabbix/binaries/stable/7.2/7.2.4/zabbix_agent-7.2.4-windows-amd64.zip"
