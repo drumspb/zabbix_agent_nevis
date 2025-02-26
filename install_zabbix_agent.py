@@ -150,7 +150,7 @@ if __name__ == "__main__":
     print("Регистрация хоста на сервере Zabbix...")
 
     # Получение токена
-    auth_response = zabbix_api_request("user.login", {"user": ZABBIX_USER, "password": ZABBIX_PASS})
+    auth_response = zabbix_api_request("user.login", {"username": ZABBIX_USER, "password": ZABBIX_PASS})
     auth_token = auth_response.get("result")
     if not auth_token:
         print("Ошибка получения токена!")
@@ -173,7 +173,6 @@ if __name__ == "__main__":
         "host.create",
         {
             "host": hostname,
-            "interfaces": [{"type": 1, "main": 1, "useip": 0, "dns": hostname, "port": "10050"}],
             "groups": [{"groupid": groupid}],
             "templates": [{"templateid": TEMPLATE_ID}],
         },
