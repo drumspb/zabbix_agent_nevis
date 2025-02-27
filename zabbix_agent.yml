@@ -1,0 +1,13 @@
+---
+- hosts: linux_server
+  become: yes
+  roles:
+    - role: zabbix_agent_nevis
+      vars:
+        zabbix_server: "10.8.0.25"
+        zabbix_server_active: "10.8.0.25"
+        zabbix_server_port: "8081"
+        groupid: "22"
+        templateid: "10001"
+        admin_user: "Admin"
+        admin_pass: "zabbix"
