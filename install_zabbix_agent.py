@@ -10,7 +10,7 @@ import configparser
 ZABBIX_SERVER = "78.37.67.154"
 ZABBIX_PORT = "8081"
 TEMPLATE_ID = "10351"
-BEARER_TOKEN = "" # внеси токен 
+BEARER_TOKEN = "" # не забудь создать и указать токен
 
 ARCHIVE_URL = "https://cdn.zabbix.com/zabbix/binaries/stable/7.2/7.2.4/zabbix_agent-7.2.4-windows-amd64.zip"
 ARCHIVE_FILE = os.path.join(os.environ["TEMP"], "zabbix_agent-7.2.4-windows-amd64.zip")
